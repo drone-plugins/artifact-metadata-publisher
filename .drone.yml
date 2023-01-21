@@ -1,0 +1,28 @@
+kind: pipeline
+type: vm
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
+
+steps:
+- name: build
+  image: golang:1.19
+  commands:
+  - go test ./...
+  - sh scripts/build.sh
+
+- name: publish
+  image: plugins/docker
+  pull: if-not-exists
+  settings:
+    repo: plugins/artifact-metadata-publisher
+    auto_tag: true
+    dockerfile: docker/Dockerfile.linux.amd64
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
