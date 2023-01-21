@@ -21,7 +21,7 @@ steps:
   settings:
     repo: plugins/artifact-metadata-publisher
     auto_tag: true
-    dockerfile: docker/Dockerfile.linux.amd64
+    dockerfile: Dockerfile
     username:
       from_secret: docker_username
     password:
