@@ -1,7 +1,6 @@
 kind: pipeline
 type: vm
 name: default
-
 platform:
   os: linux
   arch: amd64
@@ -9,24 +8,232 @@ pool:
   use: ubuntu
 
 steps:
-- name: build
-  image: golang:1.19
-  commands:
-  - go test ./...
-  - sh scripts/build.sh
+  - name: build
+    image: golang:1.19
+    commands:
+      - go test ./...
+      - sh scripts/build.sh
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
 
-- name: publish
-  image: plugins/docker
-  pull: if-not-exists
-  settings:
-    repo: plugins/artifact-metadata-publisher
-    auto_tag: true
-    dockerfile: Dockerfile
-    username:
-      from_secret: docker_username
-    password:
-      from_secret: docker_password
-  when:
-    event:
-      exclude:
-      - pull_request
+---
+kind: pipeline
+type: vm
+name: linux-amd64
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
+
+steps:
+  - name: environment
+    image: golang:1.22
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.22
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/amd64/plugin .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile
+      repo: plugins/artifact-metadata-publisher
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: linux-amd64
+depends_on:
+  - default
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
+
+---
+kind: pipeline
+type: vm
+name: linux-arm64
+platform:
+  os: linux
+  arch: arm64
+pool:
+  use: ubuntu_arm64
+
+steps:
+  - name: environment
+    image: golang:1.22
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.22
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/arm64/plugin .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.linux.arm64
+      repo: plugins/artifact-metadata-publisher
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: linux-arm64
+depends_on:
+  - default
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
+
+---
+kind: pipeline
+type: vm
+name: windows-ltsc2022
+platform:
+  os: windows
+  arch: amd64
+pool:
+  use: windows-2022
+
+steps:
+  - name: environment
+    image: golang:1.22
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.22
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/plugin.exe .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.windows
+      repo: plugins/artifact-metadata-publisher
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: windows-ltsc2022-amd64
+      daemon_off: true
+      purge: false
+    when:
+      ref:
+        - refs/heads/master
+        - refs/tags/**
+depends_on:
+  - default
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
+
+---
+kind: pipeline
+type: vm
+name: manifest
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
+
+steps:
+  - name: manifest
+    image: plugins/manifest
+    settings:
+      auto_tag: "true"
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      spec: docker/manifest.tmpl
+      ignore_missing: true
+depends_on:
+  - linux-amd64
+  - linux-arm64
+  - windows-ltsc2022
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+
+---
+kind: pipeline
+type: vm
+
+pool:
+  use: ubuntu
+
+steps:
+  - name: build
+    pull: always
+    image: golang:1.22
+    commands:
+      - GOOS=linux   GOARCH=amd64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-linux-amd64
+      - GOOS=linux   GOARCH=arm64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-linux-arm64
+      - GOOS=darwin  GOARCH=amd64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-darwin-amd64
+      - GOOS=darwin  GOARCH=arm64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-darwin-arm64
+      - GOOS=windows GOARCH=amd64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-windows-amd64
+
+    environment:
+      CGO_ENABLED: 0
+      GO111MODULE: on
+
+  - name: zstd-compress
+    commands:
+      - sudo apt-get update -y
+      - sudo apt-get install -y zstd
+      - zstd release/artifact-metadata-publisher-linux-amd64
+      - zstd release/artifact-metadata-publisher-linux-arm64
+      - zstd release/artifact-metadata-publisher-darwin-arm64
+      - zstd release/artifact-metadata-publisher-darwin-amd64
+      - zstd release/artifact-metadata-publisher-windows-amd64
+
+  - name: release
+    image: plugins/github-release
+    settings:
+      files:
+        - release/artifact-metadata-publisher-linux-amd64.zst
+        - release/artifact-metadata-publisher-linux-arm64.zst
+        - release/artifact-metadata-publisher-darwin-arm64.zst
+        - release/artifact-metadata-publisher-darwin-amd64.zst
+        - release/artifact-metadata-publisher-windows-amd64.zst
+      api_key:
+        from_secret: github_token
+    when:
+      event:
+        - tag
+depends_on:
+  - linux-amd64
+  - linux-arm64
+  - windows-ltsc2022
