@@ -189,6 +189,7 @@ trigger:
 
 ---
 kind: pipeline
+name: binaries
 type: vm
 name: binaries
 pool:
