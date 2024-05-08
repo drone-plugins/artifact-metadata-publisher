@@ -190,7 +190,7 @@ trigger:
 ---
 kind: pipeline
 type: vm
-
+name: binaries
 pool:
   use: ubuntu
 
@@ -237,3 +237,7 @@ depends_on:
   - linux-amd64
   - linux-arm64
   - windows-ltsc2022
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
