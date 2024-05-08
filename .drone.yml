@@ -15,7 +15,7 @@ steps:
       - sh scripts/build.sh
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
     - refs/pull/**
 
@@ -59,7 +59,7 @@ depends_on:
   - default
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
     - refs/pull/**
 
@@ -103,7 +103,7 @@ depends_on:
   - default
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
     - refs/pull/**
 
@@ -147,13 +147,13 @@ steps:
       purge: false
     when:
       ref:
-        - refs/heads/master
+        - refs/heads/main
         - refs/tags/**
 depends_on:
   - default
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
     - refs/pull/**
 
@@ -184,7 +184,7 @@ depends_on:
   - windows-ltsc2022
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
 
 ---
@@ -240,5 +240,5 @@ depends_on:
   - windows-ltsc2022
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/main
     - refs/tags/**
