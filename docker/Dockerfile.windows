@@ -1,0 +1,7 @@
+FROM plugins/base:windows-ltsc2022-amd64
+USER ContainerAdministrator
+ENV GODEBUG=netdns=go
+
+ADD release/windows/amd64/plugin.exe C:/
+
+ENTRYPOINT ["C:\\plugin.exe"]
