@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -43,7 +44,17 @@ func run(c *cli.Context) error {
 
 	files := make([]File, 0)
 	for i, url := range urls {
-		files = append(files, File{Name: fmt.Sprintf("file-%d", i), URL: url})
+		parts := strings.Split(url, ":::")
+		if len(parts) != 2 {
+			files = append(files, File{Name: fmt.Sprintf("file-%d", i), URL: url})
+			continue
+		}
+		name := parts[0]
+		url := parts[1]
+
+		// Append to files slice
+		files = append(files, File{Name: name, URL: url})
+
 	}
 	return writeArtifactFile(files, artifactFilePath)
 }
