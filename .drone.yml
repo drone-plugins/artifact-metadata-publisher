@@ -230,7 +230,7 @@ steps:
         - release/artifact-metadata-publisher-darwin-amd64.zst
         - release/artifact-metadata-publisher-windows-amd64.zst
       api_key:
-        from_secret: github_token
+        from_secret: cireporunner_github_token
     when:
       event:
         - tag
