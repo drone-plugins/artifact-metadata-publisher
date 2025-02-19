@@ -1,4 +1,4 @@
-FROM alpine:3.20 as alpine
+FROM alpine:3.20
 RUN apk add -U --no-cache ca-certificates
 
 ADD release/linux/amd64/plugin /bin/
