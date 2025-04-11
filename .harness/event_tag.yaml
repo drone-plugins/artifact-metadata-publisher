@@ -1,0 +1,14 @@
+inputSet:
+  name: event_tag
+  identifier: event_tag
+  orgIdentifier: default
+  projectIdentifier: Drone_Plugins
+  pipeline:
+    identifier: droneartifactmetadatapublisherharness
+    properties:
+      ci:
+        codebase:
+          build:
+            type: tag
+            spec:
+              tag: <+trigger.tag>
