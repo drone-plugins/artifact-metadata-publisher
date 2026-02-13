@@ -285,7 +285,7 @@ pipeline:
                       identifier: Build
                       spec:
                         connectorRef: account.harnessImage
-                        image: golang:1.25
+                        image: golang:1.22
                         shell: Sh
                         command: |-
                           # force go modules
@@ -300,7 +300,7 @@ pipeline:
                           # linux
                           GOOS=windows
 
-                          go build -v -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/plugin.exe .
+                          go build -v -buildvcs=false -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/plugin.exe .
                   - step:
                       type: Plugin
                       name: Build and Push on Tag
