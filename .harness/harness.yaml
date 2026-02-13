@@ -34,7 +34,7 @@ pipeline:
                   identifier: Run_1
                   spec:
                     connectorRef: Plugins_Docker_Hub_Connector
-                    image: golang:1.19
+                    image: golang:1.25
                     shell: Sh
                     command: |-
                       go test -cover ./...
@@ -64,7 +64,7 @@ pipeline:
                       identifier: Run_1
                       spec:
                         connectorRef: Plugins_Docker_Hub_Connector
-                        image: golang:1.22
+                        image: golang:1.25
                         shell: Sh
                         command: |-
                           # force go modules
@@ -138,7 +138,7 @@ pipeline:
                       name: Build Binary
                       spec:
                         connectorRef: Plugins_Docker_Hub_Connector
-                        image: golang:1.22
+                        image: golang:1.25
                         shell: Sh
                         command: |-
                           # force go modules
@@ -209,7 +209,7 @@ pipeline:
                       name: Build Binary
                       spec:
                         connectorRef: Plugins_Docker_Hub_Connector
-                        image: golang:1.22
+                        image: golang:1.25
                         shell: Sh
                         command: |-
                           # force go modules
@@ -285,7 +285,7 @@ pipeline:
                       identifier: Build
                       spec:
                         connectorRef: account.harnessImage
-                        image: golang:1.22
+                        image: golang:1.25
                         shell: Sh
                         command: |-
                           # force go modules
@@ -375,7 +375,7 @@ pipeline:
                   identifier: Run_1
                   spec:
                     connectorRef: Plugins_Docker_Hub_Connector
-                    image: golang:1.22
+                    image: golang:1.25
                     shell: Sh
                     command: |-
                       GOOS=linux   GOARCH=amd64   go build -ldflags "-s -w" -a -tags netgo -o release/artifact-metadata-publisher-linux-amd64
