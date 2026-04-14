@@ -284,7 +284,7 @@ pipeline:
                       name: Build
                       identifier: Build
                       spec:
-                        connectorRef: account.harnessImage
+                        connectorRef: Plugins_Docker_Hub_Connector
                         image: golang:1.22
                         shell: Sh
                         command: |-
@@ -334,6 +334,365 @@ pipeline:
                         condition: <+codebase.build.type> == "branch"
             delegateSelectors:
               - windows-vm
+        - stage:
+            name: RF Linux AMD64
+            identifier: rf_Linux_AMD64
+            description: RapidFort hardened artifact-metadata-publisher - linux amd64
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: false
+                paths: []
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: GitClone
+                      name: Clone RF Plugins
+                      identifier: clone_rf_plugins
+                      spec:
+                        connectorRef: RapidFortPlugins
+                        repoName: ci-rapidfort-plugins
+                        cloneDirectory: rf-plugins
+                        build:
+                          type: branch
+                          spec:
+                            branch: main
+                  - step:
+                      type: Run
+                      name: Build Binary
+                      identifier: Run_1
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: golang:1.25
+                        shell: Sh
+                        command: |-
+                          # force go modules
+                          export GOPATH=""
+
+                          # disable cgo
+                          export CGO_ENABLED=0
+
+                          set -e
+                          set -x
+
+                          # linux
+                          export GOOS=linux GOARCH=amd64
+
+                          go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/amd64/plugin .
+                        envVariables:
+                          CGO_ENABLED: "0"
+                  - step:
+                      type: Plugin
+                      name: RF Push Tag
+                      identifier: rf_push_tag
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: plugins/docker
+                        settings:
+                          username: <+secrets.getValue("harnesssecureusername")>
+                          password: <+secrets.getValue("dockerHarnessSecurePwd")>
+                          repo: harnesssecure/artifact-metadata-publisher
+                          dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.linux.amd64.rf
+                          auto_tag: "true"
+                          auto_tag_suffix: linux-amd64
+                          base_image_username: <+secrets.getValue("harness0HARUsername")>
+                          base_image_password: <+secrets.getValue("harness0HARPAT")>
+                          base_image_registry: harness0.harness.io/oci/docker_artifacts
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "tag"
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: RF Push Branch
+                      identifier: rf_push_branch
+                      spec:
+                        connectorRef: harnesssecure
+                        repo: harnesssecure/artifact-metadata-publisher
+                        tags:
+                          - linux-amd64
+                        caching: false
+                        dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.linux.amd64.rf
+                        envVariables:
+                          PLUGIN_BASE_IMAGE_USERNAME: <+secrets.getValue("harness0HARUsername")>
+                          PLUGIN_BASE_IMAGE_PASSWORD: <+secrets.getValue("harness0HARPAT")>
+                          PLUGIN_BASE_IMAGE_REGISTRY: harness0.harness.io/oci/docker_artifacts
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "branch"
+        - stage:
+            name: RF Linux ARM64
+            identifier: rf_Linux_ARM64
+            description: RapidFort hardened artifact-metadata-publisher - linux arm64
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: false
+                paths: []
+              platform:
+                os: Linux
+                arch: Arm64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: GitClone
+                      name: Clone RF Plugins
+                      identifier: clone_rf_plugins
+                      spec:
+                        connectorRef: RapidFortPlugins
+                        repoName: ci-rapidfort-plugins
+                        cloneDirectory: rf-plugins
+                        build:
+                          type: branch
+                          spec:
+                            branch: main
+                  - step:
+                      type: Run
+                      name: Build Binary
+                      identifier: Run_1
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: golang:1.25
+                        shell: Sh
+                        command: |-
+                          # force go modules
+                          export GOPATH=""
+
+                          # disable cgo
+                          export CGO_ENABLED=0
+
+                          set -e
+                          set -x
+
+                          # linux
+                          export GOOS=linux GOARCH=arm64
+
+                          go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/arm64/plugin .
+                  - step:
+                      type: Plugin
+                      name: RF Push Tag
+                      identifier: rf_push_tag
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: plugins/docker
+                        settings:
+                          username: <+secrets.getValue("harnesssecureusername")>
+                          password: <+secrets.getValue("dockerHarnessSecurePwd")>
+                          repo: harnesssecure/artifact-metadata-publisher
+                          dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.linux.arm64.rf
+                          auto_tag: "true"
+                          auto_tag_suffix: linux-arm64
+                          base_image_username: <+secrets.getValue("harness0HARUsername")>
+                          base_image_password: <+secrets.getValue("harness0HARPAT")>
+                          base_image_registry: harness0.harness.io/oci/docker_artifacts
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "tag"
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: RF Push Branch
+                      identifier: rf_push_branch
+                      spec:
+                        connectorRef: harnesssecure
+                        repo: harnesssecure/artifact-metadata-publisher
+                        tags:
+                          - linux-arm64
+                        caching: false
+                        dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.linux.arm64.rf
+                        envVariables:
+                          PLUGIN_BASE_IMAGE_USERNAME: <+secrets.getValue("harness0HARUsername")>
+                          PLUGIN_BASE_IMAGE_PASSWORD: <+secrets.getValue("harness0HARPAT")>
+                          PLUGIN_BASE_IMAGE_REGISTRY: harness0.harness.io/oci/docker_artifacts
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "branch"
+        - stage:
+            name: RF Windows-1809
+            identifier: rf_Windows1809
+            description: RapidFort artifact-metadata-publisher - windows 1809 (unchanged base)
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: false
+                paths: []
+              buildIntelligence:
+                enabled: false
+              infrastructure:
+                type: VM
+                spec:
+                  type: Pool
+                  spec:
+                    poolName: windows-2019
+                    os: Windows
+              execution:
+                steps:
+                  - step:
+                      type: GitClone
+                      name: Clone RF Plugins
+                      identifier: clone_rf_plugins
+                      spec:
+                        connectorRef: RapidFortPlugins
+                        repoName: ci-rapidfort-plugins
+                        cloneDirectory: rf-plugins
+                        build:
+                          type: branch
+                          spec:
+                            branch: main
+                  - step:
+                      type: Run
+                      name: Build
+                      identifier: Build
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: golang:1.22
+                        shell: Sh
+                        command: |-
+                          # force go modules
+                          export GOPATH=""
+
+                          # disable cgo
+                          export CGO_ENABLED=0
+
+                          set -e
+                          set -x
+
+                          # linux
+                          GOOS=windows
+
+                          go build -v -buildvcs=false -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/plugin.exe .
+                  - step:
+                      type: Plugin
+                      name: RF Push Tag
+                      identifier: rf_push_tag
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: plugins/docker
+                        settings:
+                          username: <+secrets.getValue("harnesssecureusername")>
+                          password: <+secrets.getValue("dockerHarnessSecurePwd")>
+                          repo: harnesssecure/artifact-metadata-publisher
+                          dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.windows.1809
+                          auto_tag: "true"
+                          auto_tag_suffix: windows-1809-amd64
+                          daemon_off: true
+                          purge: false
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "tag"
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: RF Push Branch
+                      identifier: rf_push_branch
+                      spec:
+                        connectorRef: harnesssecure
+                        repo: harnesssecure/artifact-metadata-publisher
+                        tags:
+                          - windows-1809-amd64
+                        caching: false
+                        dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.windows.1809
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "branch"
+            delegateSelectors:
+              - windows-vm
+        - stage:
+            name: RF Windows-LTSC2022
+            identifier: rf_WindowsLTSC2022
+            description: RapidFort artifact-metadata-publisher - windows ltsc2022 (unchanged base)
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: false
+                paths: []
+              platform:
+                os: Windows
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              buildIntelligence:
+                enabled: false
+              execution:
+                steps:
+                  - step:
+                      type: GitClone
+                      name: Clone RF Plugins
+                      identifier: clone_rf_plugins
+                      spec:
+                        connectorRef: RapidFortPlugins
+                        repoName: ci-rapidfort-plugins
+                        cloneDirectory: rf-plugins
+                        build:
+                          type: branch
+                          spec:
+                            branch: main
+                  - step:
+                      type: Run
+                      name: Build Binary
+                      identifier: build_amd64ltsc2022
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: golang:1.25
+                        shell: Sh
+                        command: |-
+                          # force go modules
+                          export GOPATH=""
+
+                          # disable cgo
+                          export CGO_ENABLED=0
+
+                          set -e
+                          set -x
+
+                          # linux
+                          GOOS=windows
+
+                          go build -v -buildvcs=false -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/plugin.exe .
+                  - step:
+                      type: Plugin
+                      name: RF Push Tag
+                      identifier: rf_push_tag
+                      spec:
+                        connectorRef: Plugins_Docker_Hub_Connector
+                        image: plugins/docker
+                        settings:
+                          username: <+secrets.getValue("harnesssecureusername")>
+                          password: <+secrets.getValue("dockerHarnessSecurePwd")>
+                          repo: harnesssecure/artifact-metadata-publisher
+                          dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.windows
+                          auto_tag: "true"
+                          auto_tag_suffix: windows-amd64
+                          daemon_off: true
+                          purge: false
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "tag"
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: RF Push Branch
+                      identifier: rf_push_branch
+                      spec:
+                        connectorRef: harnesssecure
+                        repo: harnesssecure/artifact-metadata-publisher
+                        tags:
+                          - windows-amd64
+                        caching: false
+                        dockerfile: rf-plugins/artifact-metadata-publisher/Dockerfile.windows
+                      when:
+                        stageStatus: Success
+                        condition: <+codebase.build.type> == "branch"
     - stage:
         name: Manifest and Release
         identifier: Manifest_and_Release
@@ -418,6 +777,53 @@ pipeline:
             description: ""
             required: false
             value: drone-plugins
+    - stage:
+        name: RF Manifest and Release
+        identifier: rf_Manifest_and_Release
+        description: RapidFort manifest for harnesssecure/artifact-metadata-publisher
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: false
+            paths: []
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: GitClone
+                  name: Clone RF Plugins
+                  identifier: clone_rf_plugins
+                  spec:
+                    connectorRef: RapidFortPlugins
+                    repoName: ci-rapidfort-plugins
+                    cloneDirectory: rf-plugins
+                    build:
+                      type: branch
+                      spec:
+                        branch: main
+              - step:
+                  type: Plugin
+                  name: RF Manifest
+                  identifier: rf_manifest
+                  spec:
+                    connectorRef: Plugins_Docker_Hub_Connector
+                    image: plugins/manifest
+                    settings:
+                      username: <+secrets.getValue("harnesssecureusername")>
+                      password: <+secrets.getValue("dockerHarnessSecurePwd")>
+                      auto_tag: "true"
+                      ignore_missing: "true"
+                      spec: rf-plugins/artifact-metadata-publisher/manifest.tmpl
+                  when:
+                    stageStatus: Success
+                    condition: |
+                      <+codebase.build.type> == "tag" || "branch"
   allowStageExecutions: true
   identifier: droneartifactmetadatapublisherharness
   name: drone-artifact-metadata-publisher-harness
