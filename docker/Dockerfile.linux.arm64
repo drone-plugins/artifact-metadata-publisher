@@ -1,5 +1,5 @@
 FROM alpine:3.22
-RUN apk add -U --no-cache ca-certificates
+RUN apk update && apk upgrade --no-cache && apk add -U --no-cache ca-certificates
 
 ADD release/linux/arm64/plugin /bin/
 ENTRYPOINT ["/bin/plugin"]
